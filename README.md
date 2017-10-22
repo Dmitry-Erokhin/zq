@@ -1,7 +1,7 @@
 # ZQ 
 ZQ – is a multi-producer-single-consumer durable queue based on the PostgreSQL.
 All operations are performed by calling stored procedures, so it makes it a 
-reasonable choice it you already have a PostgreSQL in your zoo and need a 
+reasonable choice if you already have a PostgreSQL in your zoo and need a 
 simple queue solution.
 
 Inspired by pgq.
@@ -36,7 +36,7 @@ In nutshell work with queue (after it was created) is as simple as:
   - Inserts items from data array as events in the queue 'queue_name' preserving order
   - Throws an exception if given queue is not exists
 
-- Consume events: `zq.dequeue(queue_name TEXT) : ROWSET`
+- Consume data: `zq.dequeue(queue_name TEXT) : ROWSET`
   - Returns content of the current batch for the queue "queue_name" as the list
   of rows with following columns:
     - `"timestamp" TIMESTAMP`
