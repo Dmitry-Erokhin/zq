@@ -7,7 +7,6 @@ import java.sql.Statement
  * Created by Dmitry Erokhin (dmitry.erokhin@gmail.com)
  * 23.10.17
  */
-
 class ConnectionTest extends ZQSpecification {
 
     def "Database is accessible"() {

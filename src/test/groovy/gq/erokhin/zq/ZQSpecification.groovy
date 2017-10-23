@@ -11,8 +11,7 @@ import javax.sql.DataSource
  * Created by Dmitry Erokhin (dmitry.erokhin@gmail.com)
  * 23.10.17
  */
-
-class ZQSpecification  extends Specification {
+class ZQSpecification extends Specification {
 
     @Shared
     DataSource dataSource
