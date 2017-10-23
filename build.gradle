@@ -1,0 +1,79 @@
+import groovy.sql.Sql
+
+ext.pgPort = project.findProperty('pgPort') as Integer ?: 54321
+ext.pgDockerName = project.findProperty('pgDockerName') ?: 'pg_zq_test'
+
+
+group 'gq.erokhin'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'groovy'
+
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'org.postgresql:postgresql:42.1.4'
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+
+dependencies {
+    testCompile 'org.codehaus.groovy:groovy-all:2.4.10'
+    testCompile 'org.spockframework:spock-core:1.1-groovy-2.4'
+
+    testRuntime 'org.postgresql:postgresql:42.1.4'
+    testCompile 'com.zaxxer:HikariCP:2.7.2'
+}
+
+task startPostgres(type: Exec) {
+    description "Starts latest PostgreSQL for testing"
+
+    commandLine "bash", "-c", """
+        echo Removing old test container
+        docker ps -q -a -f name=${project.ext.pgDockerName} | xargs docker rm -f && 
+        echo Starting new PostgreSQL container
+        docker run --name ${project.ext.pgDockerName} -p ${project.ext.pgPort}:5432 -i -t -d postgres:latest &&
+        echo Waiting for PostgreSQL to be ready
+        docker ps -q -a -f name=${project.ext.pgDockerName} | xargs docker logs -f | grep -q 'PostgreSQL init process complete; ready for start up.' &&
+        sleep 1s
+        echo PostgreSQL container started
+    """
+}
+
+task applySQL() {
+    description "Apply zq sql scripts on database"
+
+    shouldRunAfter startPostgres
+
+    doLast {
+        Sql.withInstance(
+                "jdbc:postgresql://localhost:${project.ext.pgPort}/postgres",
+                'postgres',
+                'postgres',
+                'org.postgresql.Driver') { Sql sql ->
+
+            project.fileTree('src/sql').sort().each { file ->
+                sql.execute(file.text)
+                logger.quiet("Applied $file")
+            }
+        }
+    }
+}
+
+test {
+    dependsOn startPostgres, applySQL
+}
+
+gradle.class.classLoader.addURL(
+        buildscript.configurations.classpath.find({
+            it.name.contains('postgresql')
+        }).toURI().toURL()
+)
