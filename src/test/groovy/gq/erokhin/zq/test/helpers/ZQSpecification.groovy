@@ -1,4 +1,4 @@
-package gq.erokhin.zq
+package gq.erokhin.zq.test.helpers
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
