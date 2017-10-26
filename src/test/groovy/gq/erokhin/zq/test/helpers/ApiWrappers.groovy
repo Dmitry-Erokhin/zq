@@ -22,16 +22,20 @@ class ApiWrappers {
         executeCall(ds, "{ ? = call zq.drop_queue(?) }", Types.BOOLEAN, queueName) as boolean
     }
 
-    static int openBatch(DataSource ds, String queueName) {
-        executeCall(ds, "{ ? = call zq.open_batch(?) }", Types.INTEGER, queueName) as int
+    static int openBatch(DataSource ds, String queueName, int maxBatchSize) {
+        executeCall(ds, "{ ? = call zq.open_batch(?, ?) }", Types.INTEGER, queueName, maxBatchSize) as int
     }
 
-    static int closeBatch(DataSource ds, String queueName) {
-        executeCall(ds, "{ ? = call zq.close_batch(?) }", Types.INTEGER, queueName) as int
+    static void closeBatch(DataSource ds, String queueName) {
+        executeCall(ds, "{ ? = call zq.close_batch(?) }", Types.INTEGER, queueName)
     }
 
-    static int enqueue(DataSource ds, String queueName, String[] data) {
-        executeCall(ds, "{ ? = call zq.enqueue(?, ?) }", Types.INTEGER, queueName, data) as int
+    static void cancelBatch(DataSource ds, String queueName) {
+        executeCall(ds, "{ ? = call zq.cancel_batch(?) }", Types.INTEGER, queueName)
+    }
+
+    static void enqueue(DataSource ds, String queueName, String[] data) {
+        executeCall(ds, "{ ? = call zq.enqueue(?, ?) }", Types.INTEGER, queueName, data)
     }
 
     def static dequeue(DataSource ds, String queueName) {

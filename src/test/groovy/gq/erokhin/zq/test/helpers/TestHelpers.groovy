@@ -5,14 +5,16 @@ import groovy.sql.Sql
 import javax.sql.DataSource
 import java.sql.CallableStatement
 import java.sql.Connection
+import java.sql.SQLException
 
 /**
  * Created by Dmitry Erokhin (dmitry.erokhin@gmail.com)
  * 24.10.17
  */
-
 class TestHelpers {
+    public static final String TEST_QUEUE_NAME = "test_queue"
 
+    //Due to the problems with groovy sql, fallback to original java
     def static executeCall(DataSource dataSource, String call, int resultType, ... params) {
         def noResult = "NO RESULT MARKER"
         def result = noResult
@@ -30,7 +32,7 @@ class TestHelpers {
         }
 
         if (result == noResult) {
-            throw new Exception("Can not perform db call")
+            throw new SQLException("Can not perform db call")
         }
 
         result
