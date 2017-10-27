@@ -12,18 +12,16 @@ import static gq.erokhin.zq.test.helpers.TestHelpers.TEST_QUEUE_NAME
  * Created by Dmitry Erokhin (dmitry.erokhin@gmail.com)
  * 23.10.17
  */
-class BatchManagementTest extends ZQSpecification {
-
-
+class BatchesTest extends ZQSpecification {
 
     @Unroll
     def "Open batch of #maxBatchSize on queue with #numberOfEvents events returns #result "() {
-        given: "A queue with y events"
+        given: "A queue with events"
         createQueue(dataSource, TEST_QUEUE_NAME)
         numberOfEvents.times { enqueue(dataSource, "event ${it + 1}") }
 
-        expect:
-        openBatch(dataSource, TEST_QUEUE_NAME, maxBatchSize) == result
+        expect: "Open batch return proper result"
+        result == openBatch(dataSource, TEST_QUEUE_NAME, maxBatchSize)
 
         where:
         numberOfEvents | maxBatchSize || result

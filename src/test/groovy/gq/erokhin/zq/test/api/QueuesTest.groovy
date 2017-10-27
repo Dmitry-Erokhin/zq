@@ -10,7 +10,7 @@ import static gq.erokhin.zq.test.helpers.TestHelpers.TEST_QUEUE_NAME
  * Created by Dmitry Erokhin (dmitry.erokhin@gmail.com)
  * 23.10.17
  */
-class QueueManagementTest extends ZQSpecification {
+class QueuesTest extends ZQSpecification {
 
     def "Queue created and returns true"() {
         when: "Creating a queue"
