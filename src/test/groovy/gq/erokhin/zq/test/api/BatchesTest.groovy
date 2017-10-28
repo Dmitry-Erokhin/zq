@@ -18,9 +18,9 @@ class BatchesTest extends ZQSpecification {
     def "Open batch of #maxBatchSize on queue with #numberOfEvents events returns #result "() {
         given: "A queue with events"
         createQueue(dataSource, TEST_QUEUE_NAME)
-        numberOfEvents.times { enqueue(dataSource, "event ${it + 1}") }
+        numberOfEvents.times { enqueue(dataSource, TEST_QUEUE_NAME, "event ${it + 1}") }
 
-        expect: "Open batch return proper result"
+        expect: "Open batch returns proper result"
         result == openBatch(dataSource, TEST_QUEUE_NAME, maxBatchSize)
 
         where:
@@ -54,8 +54,17 @@ class BatchesTest extends ZQSpecification {
         ex.getMessage().contains("Queue \"$TEST_QUEUE_NAME\" has already open batch.")
     }
 
-    
-    
+    def "Open batch with negative max batch size param throws an exception"() {
+        when: "Open a new batch with negative size"
+        createQueue(dataSource, TEST_QUEUE_NAME)
+        openBatch(dataSource, TEST_QUEUE_NAME, -1)
+
+        then: "Exception is thrown"
+        def ex = thrown(SQLException)
+        ex.getMessage().contains("Param \"max_batch_size\" should not be negative.")
+    }
+
+
     def "Close opened batch successfully"() {
         given: "A queue with open batch"
         createQueue(dataSource, TEST_QUEUE_NAME)
@@ -64,7 +73,7 @@ class BatchesTest extends ZQSpecification {
         when: "Close the batch"
         closeBatch(dataSource, TEST_QUEUE_NAME)
 
-        then: "No Exception thrown"
+        then: "No exception thrown"
     }
 
     def "Close batch for non existing queue throws an exception"() {
@@ -91,7 +100,7 @@ class BatchesTest extends ZQSpecification {
     def "New batch starts from unconsumed event"() {
         given: "A queue with 10 events"
         createQueue(dataSource, TEST_QUEUE_NAME)
-        10.times { enqueue(dataSource, "event ${it + 1}") }
+        10.times { enqueue(dataSource, TEST_QUEUE_NAME, "event ${it + 1}") }
 
         when: "Open and close a batch of 5, then open a new batch"
         openBatch(dataSource, TEST_QUEUE_NAME, 5)
@@ -139,7 +148,7 @@ class BatchesTest extends ZQSpecification {
     def "New batch after cancel starts from same event"() {
         given: "A queue with 10 events"
         createQueue(dataSource, TEST_QUEUE_NAME)
-        10.times { enqueue(dataSource, "event ${it + 1}") }
+        10.times { enqueue(dataSource, TEST_QUEUE_NAME, "event ${it + 1}") }
 
         when: "Open and cancel a batch of 5, then open new batch"
         openBatch(dataSource, TEST_QUEUE_NAME, 5)

@@ -1,6 +1,6 @@
 # ZQ 
 ZQ – is a multi-producer-single-consumer durable queue based on the PostgreSQL.
-All operations are performed by calling stored procedures, so it makes it a 
+All operations are performed by calling stored procedures, so it is a 
 reasonable choice if you already have a PostgreSQL in your zoo and need a 
 simple queue solution.
 
@@ -15,7 +15,7 @@ In nutshell work with queue (after it was created) is as simple as:
   - If batch was closed (for instance in case of successful data processing):
     - data will be removed from queue
     - next batch will be started from item followed by last item of closed batch
-  - If batch was canceled (for instance in case of temporary impediments of data processing):
+  - If batch was canceled (like in case of temporary impediments of data processing):
     - data stays in the queue
     - next batch will be started from same item 
 
@@ -36,9 +36,9 @@ In nutshell work with queue (after it was created) is as simple as:
   - Inserts items from data array as events in the queue 'queue_name' preserving order
   - Throws an exception if given queue is not exists
 
-- Consume data: `zq.dequeue(queue_name TEXT) : ROWSET`
-  - Returns content of the current batch for the queue "queue_name" as the list
-  of rows with following columns:
+- Consume data: `zq.dequeue(queue_name TEXT) : TABLE`
+  - Returns content of the current batch for the queue "queue_name" a table with 
+  following columns:
     - `"timestamp" TIMESTAMP`
     - `"data" TEXT`
   - Throws an exception if given queue is not exists
@@ -50,15 +50,15 @@ In nutshell work with queue (after it was created) is as simple as:
   - Creates new batch of maximum size "max_batch_size" for the queue  "queue_name"
   - Returns actual size of the newly created batch (<="max_batch_size")
   - Throws an exception if given queue is not exists
+  - Throws an exception if "max_batch_size" is a negative integer 
   - Throws an exception if non-committed batch for given queue is already exists 
-
   
-- Commit current batch: `zq.close_batch(queue_name TEXT)`
+- Commit current batch: `zq.close_batch(queue_name TEXT) : VOID`
   - Commits previously created batch for the queue "queue_name"
   - Throws an exception if given queue is not exists
   - Throws an exception if there is no batch was created for given queue
   
-- Cancel current batch: `zq.cancel_batch(queue_name TEXT)`
+- Cancel current batch: `zq.cancel_batch(queue_name TEXT) : VOID`
   - Cancel previously created batch for the queue "queue_name"
   - Throws an exception if given queue is not exists
   - Throws an exception if there is no batch was created for given queue
