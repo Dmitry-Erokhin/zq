@@ -31,14 +31,16 @@ In nutshell work with queue (after it was created) is as simple as:
   - Inserts items from data array as events in the queue 'queue_name' preserving order
   - Throws an exception if given queue is not exists
 
-- Consume data: `zq.dequeue(queue_name TEXT, max_events INT) : ROWSET`
-  - Returns at most `max_events` oldest events from the queue "queue_name" as a list
-  of rows with following columns:
+- Consume data: `zq.dequeue(queue_name TEXT, max_events INT) : TABLE`
+  - Returns at most `max_events` events from the queue "queue_name" as a table with 
+  following columns:
     - `"timestamp" TIMESTAMP`
     - `"data" TEXT`
   - Throws an exception if given queue is not exists
+  - Throws an exception if `max_events` is negative value
   
 - Confirm events: `zq.confirm(queue_name TEXT) : INT`
   - Confirms successfully processing of previously consumed events
+  - Returns amount of confirmed events
   - Throws an exception if given queue is not exists
   - Throws an exception if queue has no requests for the events consumption
