@@ -53,4 +53,9 @@ class TestHelpers {
         new Sql(dataSource).execute("DROP SCHEMA IF EXISTS zq CASCADE;")
     }
 
+    static boolean isTableExists(DataSource dataSource, String tableName) {
+        new Sql(dataSource).rows("""
+                 SELECT 1 FROM information_schema.tables
+                 WHERE table_schema = 'zq' AND table_name = '$tableName'""").size() == 1
+    }
 }
