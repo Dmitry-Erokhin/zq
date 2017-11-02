@@ -2,6 +2,7 @@ CREATE OR REPLACE FUNCTION zq.create_queue(p_queue_name TEXT) RETURNS BOOLEAN AS
 $BODY$
 DECLARE
   v_queue_id INT;
+
 BEGIN
   PERFORM * FROM zq.queues WHERE que_name = p_queue_name;
   IF FOUND THEN
@@ -13,7 +14,7 @@ BEGIN
 
   EXECUTE $$
     CREATE TABLE zq.queue_$$ || v_queue_id || $$ (
-      id          SERIAL PRIMARY KEY,
+      id          BIGSERIAL PRIMARY KEY,
       "timestamp" TIMESTAMP NOT NULL DEFAULT now(),
       "data"      TEXT
     );
@@ -30,6 +31,7 @@ CREATE OR REPLACE FUNCTION zq.drop_queue(p_queue_name TEXT) RETURNS BOOLEAN AS
 $BODY$
   DECLARE
     v_queue_id INT;
+
   BEGIN
     PERFORM * FROM zq.queues WHERE que_name = p_queue_name;
     IF NOT FOUND THEN

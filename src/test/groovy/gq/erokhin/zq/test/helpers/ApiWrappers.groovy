@@ -3,6 +3,7 @@ package gq.erokhin.zq.test.helpers
 import groovy.sql.Sql
 
 import javax.sql.DataSource
+import java.sql.Connection
 import java.sql.Types
 
 import static gq.erokhin.zq.test.helpers.TestHelpers.executeCall
@@ -27,26 +28,30 @@ class ApiWrappers {
     }
 
     static void closeBatch(DataSource ds, String queueName) {
-        executeCall(ds, "{ ? = call zq.close_batch(?) }", Types.INTEGER, queueName)
+        new Sql(ds).execute("SELECT FROM zq.close_batch($queueName)")
     }
 
     static void cancelBatch(DataSource ds, String queueName) {
-        executeCall(ds, "{ ? = call zq.cancel_batch(?) }", Types.INTEGER, queueName)
+        new Sql(ds).execute("SELECT FROM zq.cancel_batch($queueName)")
     }
 
     static void enqueue(DataSource ds, String queueName, String[] data) {
-        executeCall(ds, "{ ? = call zq.enqueue(?, ?) }", Types.INTEGER, queueName, data)
+        def sql = new Sql(ds)
+        sql.cacheConnection {Connection conn ->
+            sql.execute("SELECT FROM zq.enqueue(?, ?)", [queueName, conn.createArrayOf("TEXT", data)])
+        }
+        sql.close()
     }
 
     def static dequeue(DataSource ds, String queueName) {
-        new Sql(ds).rows("select * from zq.dequeue(?)", queueName)
-                .collect { it[2] }
+        new Sql(ds).rows("SELECT * FROM zq.dequeue(?)", queueName)
+                .collect { it[1] }
                 .toList()
     }
 
     def static dequeueWithTS(DataSource ds, String queueName) {
-        new Sql(ds).rows("select * from zq.dequeue(?)", queueName)
-                .collect { [it[1], it[2]] }
+        new Sql(ds).rows("SELECT * FROM zq.dequeue(?)", queueName)
+                .collect { [it[0], it[1]] }
                 .toList()
     }
 }

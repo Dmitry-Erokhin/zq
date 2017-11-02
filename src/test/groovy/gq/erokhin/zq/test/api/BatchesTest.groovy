@@ -25,12 +25,51 @@ class BatchesTest extends ZQSpecification {
 
         where:
         numberOfEvents | maxBatchSize || result
-        0              | 0            || 0
         0              | 10           || 0
         42             | 12           || 12
         42             | 42           || 42
         42             | 64           || 42
     }
+
+    def "Open batch empty does not creates a batch"() {
+        given: "A queue without events"
+        createQueue(dataSource, TEST_QUEUE_NAME)
+
+        when: "Opens a new batch"
+        openBatch(dataSource, TEST_QUEUE_NAME, 42) == 0
+
+        then: "No actual batch is created so without any exception we can open another one"
+        openBatch(dataSource, TEST_QUEUE_NAME, 42) == 0
+
+        and: "do it again"
+        openBatch(dataSource, TEST_QUEUE_NAME, 42) == 0
+
+        and: "again"
+        openBatch(dataSource, TEST_QUEUE_NAME, 100) == 0
+    }
+
+    def "Open batch on queue with all events consumed new events does not creates a batch"() {
+        given: "A queue with events"
+        createQueue(dataSource, TEST_QUEUE_NAME)
+        11.times { enqueue(dataSource, TEST_QUEUE_NAME, "event ${it + 1}") }
+
+        and: "All of them are consumed"
+        openBatch(dataSource, TEST_QUEUE_NAME, 42)
+        closeBatch(dataSource, TEST_QUEUE_NAME)
+
+        when: "Opens a new batch"
+        openBatch(dataSource, TEST_QUEUE_NAME, 42) == 0
+
+        then: "No actual batch is created so without any exception we can open another one"
+        openBatch(dataSource, TEST_QUEUE_NAME, 42) == 0
+
+        and: "do it again"
+        openBatch(dataSource, TEST_QUEUE_NAME, 42) == 0
+
+        and: "again"
+        openBatch(dataSource, TEST_QUEUE_NAME, 100) == 0
+    }
+
 
     def "Open batch for non existing queue throws an exception"() {
         when: "Open a new batch for non existing queue"
@@ -42,8 +81,11 @@ class BatchesTest extends ZQSpecification {
     }
 
     def "Open batch twice throws an exception"() {
-        given: "A queue with open batch"
+        given: "A queue with with events open batch"
         createQueue(dataSource, TEST_QUEUE_NAME)
+        11.times { enqueue(dataSource, TEST_QUEUE_NAME, "event ${it + 1}") }
+
+        and: "Opened batch"
         openBatch(dataSource, TEST_QUEUE_NAME, 42)
 
         when: "Open a new batch"
@@ -54,26 +96,39 @@ class BatchesTest extends ZQSpecification {
         ex.getMessage().contains("Queue \"$TEST_QUEUE_NAME\" has already open batch.")
     }
 
-    def "Open batch with negative max batch size param throws an exception"() {
-        when: "Open a new batch with negative size"
+    def "Open batch with non positive max batch size param throws an exception"() {
+        given: "A queue"
         createQueue(dataSource, TEST_QUEUE_NAME)
+
+        when: "Open a new batch with negative size"
         openBatch(dataSource, TEST_QUEUE_NAME, -1)
 
         then: "Exception is thrown"
-        def ex = thrown(SQLException)
-        ex.getMessage().contains("Param \"max_batch_size\" should not be negative.")
+        def ex1 = thrown(SQLException)
+        ex1.getMessage().contains("Max batch size param should not be negative.")
+
+        when: "Open a new batch with zero size"
+        openBatch(dataSource, TEST_QUEUE_NAME, 0)
+
+        then: "Exception is thrown"
+        def ex2 = thrown(SQLException)
+        ex2.getMessage().contains("Max batch size param should not be negative.")
     }
 
 
     def "Close opened batch successfully"() {
-        given: "A queue with open batch"
+        given: "A queue with with events open batch"
         createQueue(dataSource, TEST_QUEUE_NAME)
+        11.times { enqueue(dataSource, TEST_QUEUE_NAME, "event ${it + 1}") }
+
+        and: "Opened batch"
         openBatch(dataSource, TEST_QUEUE_NAME, 42)
 
         when: "Close the batch"
         closeBatch(dataSource, TEST_QUEUE_NAME)
 
         then: "No exception thrown"
+        noExceptionThrown()
     }
 
     def "Close batch for non existing queue throws an exception"() {
@@ -102,26 +157,33 @@ class BatchesTest extends ZQSpecification {
         createQueue(dataSource, TEST_QUEUE_NAME)
         10.times { enqueue(dataSource, TEST_QUEUE_NAME, "event ${it + 1}") }
 
-        when: "Open and close a batch of 5, then open a new batch"
-        openBatch(dataSource, TEST_QUEUE_NAME, 5)
+        when: "Open batch of 7"
+        openBatch(dataSource, TEST_QUEUE_NAME, 7)
+
+        and: "Close it"
         closeBatch(dataSource, TEST_QUEUE_NAME)
+
+        and: "Open a new batch"
         openBatch(dataSource, TEST_QUEUE_NAME, 42)
         
         then: "First consumed event is 6th enqueued"
-        dequeue(dataSource, TEST_QUEUE_NAME)[0] == "event 6"
+        dequeue(dataSource, TEST_QUEUE_NAME)[0] == "event 8"
     }
 
     
     
     def "Cancel opened batch successfully"() {
-        given: "A queue with open batch"
+        given: "A queue with with events open batch"
         createQueue(dataSource, TEST_QUEUE_NAME)
-        openBatch(dataSource, TEST_QUEUE_NAME, 42)
+        11.times { enqueue(dataSource, TEST_QUEUE_NAME, "event ${it + 1}") }
 
+        and: "Open batch"
+        openBatch(dataSource, TEST_QUEUE_NAME, 42)
         when: "Cancel the batch"
         cancelBatch(dataSource, TEST_QUEUE_NAME)
 
         then: "No Exception thrown"
+        noExceptionThrown()
     }
 
     def "Cancel batch for non existing queue throws an exception"() {
@@ -154,7 +216,6 @@ class BatchesTest extends ZQSpecification {
         openBatch(dataSource, TEST_QUEUE_NAME, 5)
         cancelBatch(dataSource, TEST_QUEUE_NAME)
         openBatch(dataSource, TEST_QUEUE_NAME, 42)
-
 
         then: "First consumed event is first enqueued"
         dequeue(dataSource, TEST_QUEUE_NAME)[0] == "event 1"

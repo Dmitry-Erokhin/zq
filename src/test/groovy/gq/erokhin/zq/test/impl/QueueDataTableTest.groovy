@@ -3,8 +3,13 @@ package gq.erokhin.zq.test.impl
 import gq.erokhin.zq.test.helpers.ZQSpecification
 import groovy.sql.Sql
 
+import static gq.erokhin.zq.test.helpers.ApiWrappers.closeBatch
 import static gq.erokhin.zq.test.helpers.ApiWrappers.createQueue
+import static gq.erokhin.zq.test.helpers.ApiWrappers.dequeue
 import static gq.erokhin.zq.test.helpers.ApiWrappers.dropQueue
+import static gq.erokhin.zq.test.helpers.ApiWrappers.enqueue
+import static gq.erokhin.zq.test.helpers.ApiWrappers.openBatch
+import static gq.erokhin.zq.test.helpers.ApiWrappers.openBatch
 import static gq.erokhin.zq.test.helpers.TestHelpers.TEST_QUEUE_NAME
 import static gq.erokhin.zq.test.helpers.TestHelpers.isTableExists
 
@@ -31,6 +36,22 @@ class QueueDataTableTest extends ZQSpecification {
 
         then: "Data table is also dropped"
         !isTableExists(dataSource,"queue_1")
+    }
+
+
+    def "Close of batch deletes consumed events"() {
+        given: "A queue with 10 events"
+        createQueue(dataSource, TEST_QUEUE_NAME)
+        10.times { enqueue(dataSource, TEST_QUEUE_NAME, "event ${it + 1}") }
+
+        when: "Open batch of 7"
+        openBatch(dataSource, TEST_QUEUE_NAME, 7)
+
+        and: "Close it"
+        closeBatch(dataSource, TEST_QUEUE_NAME)
+
+        then: "Size of queue table should be 3"
+        new Sql(dataSource).firstRow("SELECT count(*) as rowCount FROM zq.queue_1").rowCount == 3
     }
 
 }
