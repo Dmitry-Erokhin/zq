@@ -47,10 +47,12 @@ In nutshell work with queue (after it was created) is as simple as:
 ### Batch management
   
 - Create new batch: `zq.open_batch(queue_name TEXT, max_batch_size INT) : INT`
-  - Creates new batch of maximum size "max_batch_size" for the queue  "queue_name"
-  - Returns actual size of the newly created batch (<="max_batch_size")
+  - Creates new batch of maximum size "max_batch_size" for the queue  "queue_name", 
+  **if there are new events**
+  - Returns actual size of the newly created batch (<="max_batch_size") or 0 
+  if no new events are available **and batch was not created** 
   - Throws an exception if given queue is not exists
-  - Throws an exception if "max_batch_size" is a negative integer 
+  - Throws an exception if "max_batch_size" is a non-positive integer 
   - Throws an exception if non-committed batch for given queue is already exists 
   
 - Commit current batch: `zq.close_batch(queue_name TEXT) : VOID`

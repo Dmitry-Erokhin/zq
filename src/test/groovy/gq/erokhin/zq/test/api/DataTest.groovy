@@ -19,7 +19,7 @@ class DataTest extends ZQSpecification {
         createQueue(dataSource, TEST_QUEUE_NAME)
 
         when: "Enqueue event"
-        enqueue(dataSource, "event")
+        enqueue(dataSource, TEST_QUEUE_NAME, "event")
 
         then: "No exception thrown"
     }
@@ -28,7 +28,7 @@ class DataTest extends ZQSpecification {
         given: "No queue exists"
 
         when: "Enqueue event"
-        enqueue(dataSource, "event")
+        enqueue(dataSource, TEST_QUEUE_NAME, "event")
 
         then: "Exception is thrown"
         def ex = thrown(SQLException)
@@ -48,9 +48,7 @@ class DataTest extends ZQSpecification {
 
         where:
         inEvents   | maxBatchSize || expectedEvents
-        []         | 10           || []
         ['a', 'b'] | 10           || ['a', 'b']
-        ['a', 'b'] | 0            || []
         ['a', 'b'] | 1            || ['a']
     }
 
