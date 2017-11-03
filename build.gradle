@@ -1,14 +1,7 @@
-import groovy.sql.Sql
-
-ext.pgPort = project.findProperty('pgPort') as Integer ?: 54321
-ext.pgDockerName = project.findProperty('pgDockerName') ?: 'pg_zq_test'
-
-
 group 'gq.erokhin'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'groovy'
-
 
 buildscript {
     repositories {
@@ -20,17 +13,21 @@ buildscript {
 }
 
 repositories {
-    mavenCentral()
+    jcenter()
     maven { url 'https://jitpack.io' }
 }
 
+ext {
+    pgPort = project.findProperty('pgPort') as Integer ?: 54321
+    pgDockerName = project.findProperty('pgDockerName') ?: 'pg_zq_test'
+}
 
 dependencies {
     testCompile 'org.codehaus.groovy:groovy-all:2.4.10'
     testCompile 'org.spockframework:spock-core:1.1-groovy-2.4'
+    testCompile 'com.zaxxer:HikariCP:2.7.2'
 
     testRuntime 'org.postgresql:postgresql:42.1.4'
-    testCompile 'com.zaxxer:HikariCP:2.7.2'
 }
 
 task startPostgres(type: Exec) {
@@ -54,11 +51,12 @@ task applySQL() {
     shouldRunAfter startPostgres
 
     doLast {
-        Sql.withInstance(
+        //noinspection UnnecessaryQualifiedReference
+        groovy.sql.Sql.withInstance(
                 "jdbc:postgresql://localhost:${project.ext.pgPort}/postgres",
                 'postgres',
                 'postgres',
-                'org.postgresql.Driver') { Sql sql ->
+                'org.postgresql.Driver') { groovy.sql.Sql sql ->
 
             project.fileTree('src/sql').sort().each { file ->
                 sql.execute(file.text)
@@ -70,6 +68,9 @@ task applySQL() {
 
 test {
     dependsOn startPostgres, applySQL
+    afterTest { desc, result ->
+        logger.quiet "Executing test ${desc.name} [${desc.className}] with result: ${result.resultType}"
+    }
 }
 
 gradle.class.classLoader.addURL(
