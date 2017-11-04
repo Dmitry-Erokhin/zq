@@ -19,7 +19,7 @@ class DataTest extends ZQSpecification {
         createQueue(dataSource, TEST_QUEUE_NAME)
 
         when: "Enqueue event"
-        enqueue(dataSource, TEST_QUEUE_NAME, "event")
+        enqueue(dataSource, TEST_QUEUE_NAME, ["event"])
 
         then: "No exception thrown"
     }
@@ -28,7 +28,7 @@ class DataTest extends ZQSpecification {
         given: "No queue exists"
 
         when: "Enqueue event"
-        enqueue(dataSource, TEST_QUEUE_NAME, "event")
+        enqueue(dataSource, TEST_QUEUE_NAME, ["event"])
 
         then: "Exception is thrown"
         def ex = thrown(SQLException)
@@ -40,7 +40,7 @@ class DataTest extends ZQSpecification {
     def "Dequeue returns events of batch size in proper order"() {
         given: "A queue with events and open batch"
         createQueue(dataSource, TEST_QUEUE_NAME)
-        inEvents.each { enqueue(dataSource, TEST_QUEUE_NAME, it) }
+        enqueue(dataSource, TEST_QUEUE_NAME, inEvents)
         openBatch(dataSource, TEST_QUEUE_NAME, maxBatchSize)
 
         expect: "Received expected amount of events in proper order"
@@ -50,6 +50,7 @@ class DataTest extends ZQSpecification {
         inEvents   | maxBatchSize || expectedEvents
         ['a', 'b'] | 10           || ['a', 'b']
         ['a', 'b'] | 1            || ['a']
+        ['a']      | 10           || ['a']
     }
 
     def "Dequeue from NON existing queue throws exception"() {

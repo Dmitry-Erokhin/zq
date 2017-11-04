@@ -40,9 +40,9 @@ class QueueDataTableTest extends ZQSpecification {
 
 
     def "Close of batch deletes consumed events"() {
-        given: "A queue with 10 events"
+        given: "A queue with 11 events"
         createQueue(dataSource, TEST_QUEUE_NAME)
-        10.times { enqueue(dataSource, TEST_QUEUE_NAME, "event ${it + 1}") }
+        enqueue(dataSource, TEST_QUEUE_NAME, (1..11).collect {"event $it"})
 
         when: "Open batch of 7"
         openBatch(dataSource, TEST_QUEUE_NAME, 7)
@@ -50,8 +50,8 @@ class QueueDataTableTest extends ZQSpecification {
         and: "Close it"
         closeBatch(dataSource, TEST_QUEUE_NAME)
 
-        then: "Size of queue table should be 3"
-        new Sql(dataSource).firstRow("SELECT count(*) as rowCount FROM zq.queue_1").rowCount == 3
+        then: "Size of queue table should be 4"
+        new Sql(dataSource).firstRow("SELECT count(*) as rowCount FROM zq.queue_1").rowCount == 4
     }
 
 }
