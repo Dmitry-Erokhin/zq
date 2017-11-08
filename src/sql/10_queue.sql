@@ -4,13 +4,12 @@ DECLARE
   v_queue_id INT;
 
 BEGIN
-  PERFORM * FROM zq.queues WHERE que_name = p_queue_name;
-  IF FOUND THEN
+  BEGIN
+    INSERT INTO zq.queues(que_name) VALUES (p_queue_name) RETURNING que_id INTO v_queue_id;
+  EXCEPTION WHEN unique_violation THEN
     RAISE NOTICE 'Attempt of creation existing queue %', p_queue_name;
     RETURN FALSE;
-  END IF;
-
-  INSERT INTO zq.queues(que_name) VALUES (p_queue_name) RETURNING que_id INTO v_queue_id;
+  END;
 
   EXECUTE $$
     CREATE TABLE zq.queue_$$ || v_queue_id || $$ (
@@ -33,13 +32,12 @@ $BODY$
     v_queue_id INT;
 
   BEGIN
-    PERFORM * FROM zq.queues WHERE que_name = p_queue_name;
-    IF NOT FOUND THEN
+    DELETE FROM zq.queues WHERE que_name = p_queue_name RETURNING que_id INTO v_queue_id;
+    IF v_queue_id IS NULL THEN
       RAISE NOTICE 'Attempt of dropping non existing queue %', p_queue_name;
       RETURN FALSE;
     END IF;
 
-    DELETE FROM zq.queues WHERE que_name = p_queue_name RETURNING que_id INTO v_queue_id;
     EXECUTE 'DROP TABLE IF EXISTS zq.queue_' || v_queue_id;
 
     RAISE NOTICE 'Queue % with id % and corresponding table were deleted ', p_queue_name, v_queue_id;

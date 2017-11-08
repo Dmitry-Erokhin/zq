@@ -5,7 +5,9 @@ import groovy.sql.Sql
 import javax.sql.DataSource
 import java.sql.CallableStatement
 import java.sql.Connection
+import java.sql.ResultSet
 import java.sql.SQLException
+import java.sql.Statement
 
 /**
  * Created by Dmitry Erokhin (dmitry.erokhin@gmail.com)
@@ -13,6 +15,7 @@ import java.sql.SQLException
  */
 class TestHelpers {
     public static final String TEST_QUEUE_NAME = "test_queue"
+    def static RANDOM = new Random()
 
     //Due to the problems with groovy sql, fallback to original java
     def static executeCall(DataSource dataSource, String call, int resultType, ... params) {
@@ -56,6 +59,31 @@ class TestHelpers {
     static boolean isTableExists(DataSource dataSource, String tableName) {
         new Sql(dataSource).rows("""
                  SELECT 1 FROM information_schema.tables
-                 WHERE table_schema = 'zq' AND table_name = '$tableName'""").size() == 1
+                 WHERE table_schema = 'zq' AND table_name = ?""", tableName).size() == 1
+    }
+
+    static {
+        Sql.metaClass.eachRowLazy = { String query, int fetchSize, Closure consumer ->
+            def oldResultSetType = delegate.resultSetType
+            def oldResultSetConcurrency = delegate.resultSetConcurrency
+            delegate.cacheConnection { Connection conn ->
+                boolean autoCommitOriginalState = conn.autoCommit
+                try {
+                    conn.autoCommit = false
+                    delegate.resultSetType = ResultSet.TYPE_FORWARD_ONLY
+                    delegate.resultSetConcurrency = ResultSet.CONCUR_READ_ONLY
+                    delegate.withStatement { final Statement stmt ->
+                        stmt.fetchSize = fetchSize
+                    }
+                    delegate.eachRow(query, consumer)
+                } finally {
+                    if (!conn.closed) {
+                        conn.autoCommit = autoCommitOriginalState
+                        delegate.resultSetType = oldResultSetType
+                        delegate.resultSetConcurrency = oldResultSetConcurrency
+                    }
+                }
+            }
+        }
     }
 }

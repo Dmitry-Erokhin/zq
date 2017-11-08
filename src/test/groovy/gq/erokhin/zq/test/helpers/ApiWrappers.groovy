@@ -35,10 +35,10 @@ class ApiWrappers {
         new Sql(ds).execute("SELECT FROM zq.cancel_batch($queueName)")
     }
 
-    static void enqueue(DataSource ds, String queueName, String[] data) {
+    static void enqueue(DataSource ds, String queueName, Collection<String> data) {
         def sql = new Sql(ds)
         sql.cacheConnection {Connection conn ->
-            sql.execute("SELECT FROM zq.enqueue(?, ?)", [queueName, conn.createArrayOf("TEXT", data)])
+            sql.execute("SELECT FROM zq.enqueue(?, ?)", [queueName, conn.createArrayOf("TEXT", data.toArray())])
         }
         sql.close()
     }
