@@ -27,6 +27,7 @@ dependencies {
     testCompile 'org.spockframework:spock-core:1.1-groovy-2.4'
     testCompile 'com.zaxxer:HikariCP:2.7.2'
     testCompile 'org.codehaus.gpars:gpars:1.2.1'
+    testCompile 'io.dropwizard.metrics:metrics-core:3.2.3'
 
     testRuntime 'org.postgresql:postgresql:42.1.4'
 }

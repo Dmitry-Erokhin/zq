@@ -1,5 +1,7 @@
 package gq.erokhin.zq.test.helpers
 
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 import groovy.sql.Sql
 
 import javax.sql.DataSource
@@ -60,6 +62,17 @@ class TestHelpers {
         new Sql(dataSource).rows("""
                  SELECT 1 FROM information_schema.tables
                  WHERE table_schema = 'zq' AND table_name = ?""", tableName).size() == 1
+    }
+
+    static DataSource createDatasource(host, port,
+                                       databaseName = 'postgres',
+                                       userName = 'postgres',
+                                       password = 'postgres') {
+        HikariConfig hikariConfig = new HikariConfig()
+        hikariConfig.setJdbcUrl("jdbc:postgresql://$host:$port/$databaseName")
+        hikariConfig.setUsername(userName)
+        hikariConfig.setPassword(password)
+        new HikariDataSource(hikariConfig)
     }
 
     static {

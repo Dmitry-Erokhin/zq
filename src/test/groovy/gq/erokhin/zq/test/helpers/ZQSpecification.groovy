@@ -1,11 +1,12 @@
 package gq.erokhin.zq.test.helpers
 
-import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import spock.lang.Shared
 import spock.lang.Specification
 
 import javax.sql.DataSource
+
+import static gq.erokhin.zq.test.helpers.TestHelpers.createDatasource
 
 /**
  * Created by Dmitry Erokhin (dmitry.erokhin@gmail.com)
@@ -17,11 +18,7 @@ class ZQSpecification extends Specification {
     DataSource dataSource
 
     def setupSpec() {
-        HikariConfig hikariConfig = new HikariConfig()
-        hikariConfig.setJdbcUrl("jdbc:postgresql://localhost:54321/postgres")
-        hikariConfig.setUsername("postgres")
-        hikariConfig.setPassword("postgres")
-        dataSource = new HikariDataSource(hikariConfig)
+        dataSource = createDatasource('localhost', 54321)
     }
 
     def cleanupSpec() {
