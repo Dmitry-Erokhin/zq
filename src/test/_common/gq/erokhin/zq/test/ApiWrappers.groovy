@@ -1,12 +1,10 @@
-package gq.erokhin.zq.test.helpers
+package gq.erokhin.zq.test
 
 import groovy.sql.Sql
 
 import javax.sql.DataSource
 import java.sql.Connection
 import java.sql.Types
-
-import static gq.erokhin.zq.test.helpers.TestHelpers.executeCall
 
 /**
  * Created by Dmitry Erokhin (dmitry.erokhin@gmail.com)
@@ -16,15 +14,15 @@ import static gq.erokhin.zq.test.helpers.TestHelpers.executeCall
 class ApiWrappers {
 
     static boolean createQueue(DataSource ds, String queueName) {
-        executeCall(ds, "{ ? = call zq.create_queue(?) }", Types.BOOLEAN, queueName) as boolean
+        Helpers.executeCall(ds, "{ ? = call zq.create_queue(?) }", Types.BOOLEAN, queueName) as boolean
     }
 
     static boolean dropQueue(DataSource ds, String queueName) {
-        executeCall(ds, "{ ? = call zq.drop_queue(?) }", Types.BOOLEAN, queueName) as boolean
+        Helpers.executeCall(ds, "{ ? = call zq.drop_queue(?) }", Types.BOOLEAN, queueName) as boolean
     }
 
     static int openBatch(DataSource ds, String queueName, int maxBatchSize) {
-        executeCall(ds, "{ ? = call zq.open_batch(?, ?) }", Types.INTEGER, queueName, maxBatchSize) as int
+        Helpers.executeCall(ds, "{ ? = call zq.open_batch(?, ?) }", Types.INTEGER, queueName, maxBatchSize) as int
     }
 
     static void closeBatch(DataSource ds, String queueName) {

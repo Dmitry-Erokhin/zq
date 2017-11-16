@@ -1,12 +1,10 @@
-package gq.erokhin.zq.test.helpers
+package gq.erokhin.zq.test
 
 import com.zaxxer.hikari.HikariDataSource
 import spock.lang.Shared
 import spock.lang.Specification
 
 import javax.sql.DataSource
-
-import static gq.erokhin.zq.test.helpers.TestHelpers.createDatasource
 
 /**
  * Created by Dmitry Erokhin (dmitry.erokhin@gmail.com)
@@ -18,7 +16,7 @@ class ZQSpecification extends Specification {
     DataSource dataSource
 
     def setupSpec() {
-        dataSource = createDatasource('localhost', 54321)
+        dataSource = Helpers.createDatasource('localhost', 54321)
     }
 
     def cleanupSpec() {
@@ -26,10 +24,10 @@ class ZQSpecification extends Specification {
     }
 
     def setup() {
-        TestHelpers.createSchema(dataSource)
+        Helpers.createSchema(dataSource)
     }
 
     def cleanup() {
-        TestHelpers.dropSchema(dataSource)
+        Helpers.dropSchema(dataSource)
     }
 }

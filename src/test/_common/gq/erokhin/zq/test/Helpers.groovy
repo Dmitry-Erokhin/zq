@@ -1,21 +1,17 @@
-package gq.erokhin.zq.test.helpers
+package gq.erokhin.zq.test
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import groovy.sql.Sql
 
 import javax.sql.DataSource
-import java.sql.CallableStatement
-import java.sql.Connection
-import java.sql.ResultSet
-import java.sql.SQLException
-import java.sql.Statement
+import java.sql.*
 
 /**
  * Created by Dmitry Erokhin (dmitry.erokhin@gmail.com)
  * 24.10.17
  */
-class TestHelpers {
+class Helpers {
     public static final String TEST_QUEUE_NAME = "test_queue"
     def static RANDOM = new Random()
 
@@ -44,7 +40,6 @@ class TestHelpers {
     }
 
     static void createSchema(DataSource dataSource) {
-
         new Sql(dataSource).cacheConnection { Connection conn ->
             new File("./src/sql")
                     .listFiles()
