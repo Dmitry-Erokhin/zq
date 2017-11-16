@@ -1,22 +1,19 @@
-package gq.erokhin.zq.test.stress
+package gq.erokhin.zq.test.load
 
-import gq.erokhin.zq.test.helpers.ZQSpecification
+import gq.erokhin.zq.test.ZQSpecification
 import groovy.sql.Sql
 import groovyx.gpars.GParsPool
 
-import java.sql.SQLException
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 
-import static gq.erokhin.zq.test.helpers.ApiWrappers.*
-import static gq.erokhin.zq.test.helpers.TestHelpers.RANDOM
-import static gq.erokhin.zq.test.helpers.TestHelpers.TEST_QUEUE_NAME
+import static gq.erokhin.zq.test.ApiWrappers.*
+import static gq.erokhin.zq.test.Helpers.RANDOM
 
 /**
  * Created by Dmitry Erokhin (dmitry.erokhin@gmail.com)
  * 23.10.17
  */
-class QueueStressTest extends ZQSpecification {
+class QueueLoadTest extends ZQSpecification {
 
     def static TEST_QUEUES_COUNT = 30
     def static PARALLEL_WORKERS_COUNT = 42

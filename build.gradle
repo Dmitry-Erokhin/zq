@@ -2,6 +2,7 @@ group 'gq.erokhin'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'groovy'
+apply plugin: 'application'
 
 buildscript {
     repositories {
@@ -14,7 +15,6 @@ buildscript {
 
 repositories {
     jcenter()
-    maven { url 'https://jitpack.io' }
 }
 
 ext {
@@ -22,12 +22,29 @@ ext {
     pgDockerName = project.findProperty('pgDockerName') ?: 'pg_zq_test'
 }
 
+sourceSets {
+    common { groovy.srcDirs = ['src/test/_common'] }
+    apiTests { groovy.srcDirs = ['src/test/api'] }
+    loadTests { groovy.srcDirs = ['src/test/load'] }
+    performanceTests { groovy.srcDirs = ['src/test/performance'] }
+}
+
+configurations {
+    commonCompile.extendsFrom(compile)
+    apiTestsCompile.extendsFrom(testCompile)
+    loadTestsCompile.extendsFrom(testCompile)
+    performanceTestsCompile.extendsFrom(testCompile)
+}
+
 dependencies {
-    testCompile 'org.codehaus.groovy:groovy-all:2.4.10'
-    testCompile 'org.spockframework:spock-core:1.1-groovy-2.4'
-    testCompile 'com.zaxxer:HikariCP:2.7.2'
-    testCompile 'org.codehaus.gpars:gpars:1.2.1'
-    testCompile 'io.dropwizard.metrics:metrics-core:3.2.3'
+    compile 'org.codehaus.groovy:groovy-all:2.4.10'
+    compile 'org.spockframework:spock-core:1.1-groovy-2.4'
+    compile 'com.zaxxer:HikariCP:2.7.2'
+    compile 'org.codehaus.gpars:gpars:1.2.1'
+
+    testCompile sourceSets.common.output
+
+    performanceTestsCompile 'io.dropwizard.metrics:metrics-core:3.2.3'
 
     testRuntime 'org.postgresql:postgresql:42.1.4'
 }
@@ -68,11 +85,31 @@ task applySQL() {
     }
 }
 
-test {
-    dependsOn startPostgres, applySQL
-    afterTest { desc, result ->
-        logger.quiet "Executing test ${desc.name} [${desc.className}] with result: ${result.resultType}"
-    }
+task apiTest(type: Test) {
+    group "verification"
+    description "Runs basic suite that tests API of zq"
+    dependsOn startPostgres
+
+    testClassesDirs += sourceSets.apiTests.output.classesDirs
+    classpath += sourceSets.apiTests.runtimeClasspath
+}
+
+task loadTest(type: Test) {
+    group "verification"
+    description "Runs load suite that test library under concurrent load"
+    dependsOn startPostgres
+
+    testClassesDirs += sourceSets.loadTests.output.classesDirs
+    classpath += sourceSets.loadTests.runtimeClasspath
+}
+
+test.dependsOn apiTest, loadTest
+
+task performanceTest(type: JavaExec) {
+    main = 'gq.erokhin.zq.test.performance.PerformanceTest'
+    classpath = sourceSets.performanceTests.runtimeClasspath
+
+// TODO: add params for testing and where to store output file
 }
 
 gradle.class.classLoader.addURL(

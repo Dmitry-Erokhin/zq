@@ -1,20 +1,20 @@
-package gq.erokhin.zq.test.stress
+package gq.erokhin.zq.test.load
 
-import gq.erokhin.zq.test.helpers.ZQSpecification
+import gq.erokhin.zq.test.ZQSpecification
 import groovy.sql.Sql
 import groovyx.gpars.GParsPool
 
 import java.sql.SQLException
 import java.util.concurrent.CountDownLatch
 
-import static gq.erokhin.zq.test.helpers.ApiWrappers.*
-import static gq.erokhin.zq.test.helpers.TestHelpers.*
+import static gq.erokhin.zq.test.ApiWrappers.*
+import static gq.erokhin.zq.test.Helpers.*
 
 /**
  * Created by Dmitry Erokhin (dmitry.erokhin@gmail.com)
  * 23.10.17
  */
-class DataStressTest extends ZQSpecification {
+class DataLoadTest extends ZQSpecification {
 
     def static TEST_EVENTS_COUNT = 10000
     def static PARALLEL_WORKERS_COUNT = 42
@@ -94,10 +94,10 @@ class DataStressTest extends ZQSpecification {
         List<String> result = []
 
         and: "Fetch size to configure statement for cursor usage"
-        int fetchSize = TEST_EVENTS_COUNT / 10
+        int fetchSize = TEST_EVENTS_COUNT / 10 as Integer
 
         and: "Amount of consumed events after which queue will be dropped"
-        int deleteThreshold = TEST_EVENTS_COUNT / 2
+        int deleteThreshold = TEST_EVENTS_COUNT / 2 as Integer
 
         and: "Process that will drop a queue"
         CountDownLatch latch = new CountDownLatch(1)

@@ -1,6 +1,6 @@
 package gq.erokhin.zq.test.performance
 
-import gq.erokhin.zq.test.helpers.ApiWrappers
+import gq.erokhin.zq.test.ApiWrappers
 
 import javax.sql.DataSource
 

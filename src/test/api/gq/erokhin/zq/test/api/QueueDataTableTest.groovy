@@ -1,17 +1,15 @@
-package gq.erokhin.zq.test.impl
+package gq.erokhin.zq.test.api
 
-import gq.erokhin.zq.test.helpers.ZQSpecification
+import gq.erokhin.zq.test.ZQSpecification
 import groovy.sql.Sql
 
-import static gq.erokhin.zq.test.helpers.ApiWrappers.closeBatch
-import static gq.erokhin.zq.test.helpers.ApiWrappers.createQueue
-import static gq.erokhin.zq.test.helpers.ApiWrappers.dequeue
-import static gq.erokhin.zq.test.helpers.ApiWrappers.dropQueue
-import static gq.erokhin.zq.test.helpers.ApiWrappers.enqueue
-import static gq.erokhin.zq.test.helpers.ApiWrappers.openBatch
-import static gq.erokhin.zq.test.helpers.ApiWrappers.openBatch
-import static gq.erokhin.zq.test.helpers.TestHelpers.TEST_QUEUE_NAME
-import static gq.erokhin.zq.test.helpers.TestHelpers.isTableExists
+import static gq.erokhin.zq.test.ApiWrappers.closeBatch
+import static gq.erokhin.zq.test.ApiWrappers.createQueue
+import static gq.erokhin.zq.test.ApiWrappers.dropQueue
+import static gq.erokhin.zq.test.ApiWrappers.enqueue
+import static gq.erokhin.zq.test.ApiWrappers.openBatch
+import static gq.erokhin.zq.test.Helpers.TEST_QUEUE_NAME
+import static gq.erokhin.zq.test.Helpers.isTableExists
 
 /**
  * Created by Dmitry Erokhin (dmitry.erokhin@gmail.com)
