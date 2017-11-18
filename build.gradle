@@ -34,6 +34,7 @@ configurations {
     apiTestsCompile.extendsFrom(testCompile)
     loadTestsCompile.extendsFrom(testCompile)
     performanceTestsCompile.extendsFrom(testCompile)
+    performanceTestsRuntime.extendsFrom(testRuntime)
 }
 
 dependencies {
@@ -45,6 +46,7 @@ dependencies {
     testCompile sourceSets.common.output
 
     performanceTestsCompile 'io.dropwizard.metrics:metrics-core:3.2.3'
+    performanceTestsCompile 'commons-cli:commons-cli:1.4'
 
     testRuntime 'org.postgresql:postgresql:42.1.4'
 }
@@ -106,10 +108,18 @@ task loadTest(type: Test) {
 test.dependsOn apiTest, loadTest
 
 task performanceTest(type: JavaExec) {
-    main = 'gq.erokhin.zq.test.performance.PerformanceTest'
+    group "verification"
+    description "Runs performance tests, stores results in build "
+
+    main = 'gq.erokhin.zq.test.performance.Runner'
     classpath = sourceSets.performanceTests.runtimeClasspath
 
-// TODO: add params for testing and where to store output file
+    args = ['--chunk-sizes=10,100',
+            '--event-sizes=16',
+            '--run-time=120',
+            '--warm-up-time=30',
+            "--pg-port=${project.ext.pgPort}",
+            "--output-dir=${project.buildDir}"]
 }
 
 gradle.class.classLoader.addURL(

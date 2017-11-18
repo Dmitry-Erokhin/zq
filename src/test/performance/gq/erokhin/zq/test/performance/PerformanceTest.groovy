@@ -1,6 +1,5 @@
 package gq.erokhin.zq.test.performance
 
-import com.codahale.metrics.Meter
 import com.codahale.metrics.MetricRegistry
 import gq.erokhin.zq.test.Helpers
 
@@ -15,46 +14,49 @@ import static java.time.LocalDateTime.now
  */
 class PerformanceTest {
     QueuingSolution solution
-    Duration maxRunTime
-    long maxEvents
-    MetricRegistry metrics
-    Meter enqueueMeter
-    Meter dequeueMeter
+    Duration runTime
+    Duration warmUpTime
+    MetricRegistry metrics = new MetricRegistry()
+
+    def enqueueRate
+    def dequeueRate
 
     PerformanceTest(
             QueuingSolution solution,
-            MetricRegistry metrics,
-            Duration maxRunTime = Duration.ofDays(365),
-            long maxEvents = Long.MAX_VALUE) {
+            Duration runTime, Duration warmUpTime) {
         this.solution = solution
-        this.maxRunTime = maxRunTime
-        this.maxEvents = maxEvents
-        this.metrics = metrics
-        this.enqueueMeter = metrics.meter("Enqueue")
-        this.dequeueMeter = metrics.meter("Dequeue")
+        this.runTime = runTime
+        this.warmUpTime = warmUpTime
     }
 
-    def testEnqueue(int eventSize, int chunkSize) {
-        def data = generateData(eventSize, chunkSize)
-        def endTime = now() + maxRunTime
-        long enqueuedEvents = 0
+    def testEnqueue(int chunkSize, int eventSize) {
+        def data = generateData(chunkSize, eventSize)
+        def endTime = now() + runTime
+        def warmUpFinishTime = now() + warmUpTime
+        def meter = null
 
-        while (Thread.interrupted() || now() < endTime || enqueuedEvents > maxEvents) {
+        while (Thread.interrupted() || now() < endTime) {
             solution.enqueue(Helpers.TEST_QUEUE_NAME, data)
-            enqueueMeter.mark(data.size())
-            enqueuedEvents += data.size()
+            if (now() > warmUpFinishTime) {
+                if (!meter) {
+                    meter = metrics.meter("Enqueue")
+                }
+                meter.mark(data.size())
+            }
         }
+        enqueueRate = meter.meanRate.round(3)
     }
 
     def testDequeue(eventSize, maxBatchSize) {
-
+        //TODO: implement
     }
 
     def testEnqueueDequeue(eventSize, chunkSize, maxBatchSize) {
-
+        //TODO: implement
     }
 
-    static List<String> generateData(int eventSize, int chunkSize) {
+
+    static List<String> generateData(int chunkSize, int eventSize) {
         [(1..eventSize).collect { (('A'..'Z') + ('a'..'z'))[RANDOM.nextInt(52)] }.join()] * chunkSize
     }
 }

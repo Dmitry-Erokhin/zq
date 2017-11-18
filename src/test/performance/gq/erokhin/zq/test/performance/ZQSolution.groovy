@@ -32,8 +32,6 @@ class ZQSolution implements QueuingSolution {
         if (ApiWrappers.openBatch(dataSource, queueName, maxBatchSize) > 0) {
             ApiWrappers.dequeue(dataSource, queueName)
             ApiWrappers.closeBatch(dataSource, queueName)
-        } else { //FIXME: remove
-            println "No data in queue"
         }
     }
 }
