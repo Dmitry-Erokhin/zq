@@ -1,8 +1,8 @@
 package gq.erokhin.zq.test.performance
 
-import gq.erokhin.zq.test.ApiWrappers
-
 import javax.sql.DataSource
+
+import static gq.erokhin.zq.test.ApiWrappers.*
 
 /**
  * Created by Dmitry Erokhin (dmitry.erokhin@gmail.com)
@@ -19,19 +19,23 @@ class ZQSolution implements QueuingSolution {
 
     @Override
     void createQueue(String queueName) {
-        ApiWrappers.createQueue(dataSource, queueName)
+        createQueue(dataSource, queueName)
     }
 
     @Override
     void enqueue(String queueName, List<String> data) {
-        ApiWrappers.enqueue(dataSource, queueName, data)
+        enqueue(dataSource, queueName, data)
     }
 
     @Override
-    void dequeue(String queueName, int maxBatchSize) {
-        if (ApiWrappers.openBatch(dataSource, queueName, maxBatchSize) > 0) {
-            ApiWrappers.dequeue(dataSource, queueName)
-            ApiWrappers.closeBatch(dataSource, queueName)
+    int dequeue(String queueName, int maxBatchSize) {
+        if (openBatch(dataSource, queueName, maxBatchSize) == 0) {
+            return 0
         }
+
+        def events = dequeue(dataSource, queueName)
+        closeBatch(dataSource, queueName)
+
+        return events.size()
     }
 }

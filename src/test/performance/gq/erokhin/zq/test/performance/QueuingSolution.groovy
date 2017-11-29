@@ -8,5 +8,5 @@ package gq.erokhin.zq.test.performance
 interface QueuingSolution {
     void createQueue(String queueName)
     void enqueue(String queueName, List<String> data)
-    void dequeue(String queueName, int maxBatchSize)
+    int dequeue(String queueName, int maxBatchSize)
 }

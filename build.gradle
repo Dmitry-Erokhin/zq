@@ -55,7 +55,7 @@ task startPostgres(type: Exec) {
     description "Starts latest PostgreSQL for testing"
 
     commandLine "bash", "-c", """
-        echo Removing old test container
+        echo Removing old PostgreSQL container
         docker ps -q -a -f name=${project.ext.pgDockerName} | xargs docker rm -f && 
         echo Starting new PostgreSQL container
         docker run --name ${project.ext.pgDockerName} -p ${project.ext.pgPort}:5432 -i -t -d postgres:latest &&
@@ -109,15 +109,16 @@ test.dependsOn apiTest, loadTest
 
 task performanceTest(type: JavaExec) {
     group "verification"
-    description "Runs performance tests, stores results in build "
+    description "Runs performance tests, stores results in build folder"
+    dependsOn startPostgres
 
-    main = 'gq.erokhin.zq.test.performance.Runner'
+    main = 'gq.erokhin.zq.test.performance.SequentialTest'
     classpath = sourceSets.performanceTests.runtimeClasspath
 
-    args = ['--chunk-sizes=10,100',
+    args = ['--chunk-sizes=10,100,1000,10000',
             '--event-sizes=16',
-            '--run-time=120',
-            '--warm-up-time=30',
+            '--enqueue-runtime=30',
+            '--warm-up-time=10',
             "--pg-port=${project.ext.pgPort}",
             "--output-dir=${project.buildDir}"]
 }
