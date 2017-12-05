@@ -107,9 +107,9 @@ task loadTest(type: Test) {
 
 test.dependsOn apiTest, loadTest
 
-task performanceTest(type: JavaExec) {
-    group "verification"
-    description "Runs performance tests, stores results in build folder"
+task sequentialPerfTest(type: JavaExec) {
+    group "perfTest"
+    description "Runs sequential performance tests, stores results in build folder"
     dependsOn startPostgres
 
     main = 'gq.erokhin.zq.test.performance.SequentialTest'
@@ -118,7 +118,23 @@ task performanceTest(type: JavaExec) {
     args = ['--chunk-sizes=10,100,1000,10000',
             '--event-sizes=16',
             '--enqueue-runtime=30',
-            '--warm-up-time=10',
+            '--warmup-time=10',
+            "--pg-port=${project.ext.pgPort}",
+            "--output-dir=${project.buildDir}"]
+}
+task parallelPerfTest(type: JavaExec) {
+    group "perfTest"
+    description "Runs parallel performance tests, stores results in build folder"
+    dependsOn startPostgres
+
+    main = 'gq.erokhin.zq.test.performance.ParallelTest'
+    classpath = sourceSets.performanceTests.runtimeClasspath
+
+    args = ['--chunk-sizes=10,100,1000,10000',
+            '--event-sizes=16',
+            '--test-runtime=60',
+            '--dequeue-delay=20',
+            '--warmup-time=10',
             "--pg-port=${project.ext.pgPort}",
             "--output-dir=${project.buildDir}"]
 }

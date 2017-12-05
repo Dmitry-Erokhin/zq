@@ -7,13 +7,15 @@ import groovy.sql.Sql
 import javax.sql.DataSource
 import java.sql.*
 
+import static gq.erokhin.zq.test.Helpers.getRANDOM
+
 /**
  * Created by Dmitry Erokhin (dmitry.erokhin@gmail.com)
  * 24.10.17
  */
 class Helpers {
     public static final String TEST_QUEUE_NAME = "test_queue"
-    def static RANDOM = new Random()
+    public static final Random RANDOM = new Random()
 
     //Due to the problems with groovy sql, fallback to original java
     def static executeCall(DataSource dataSource, String call, int resultType, ... params) {
@@ -69,6 +71,11 @@ class Helpers {
         hikariConfig.setPassword(password)
         new HikariDataSource(hikariConfig)
     }
+
+    static List<String> generateRandomData(int chunkSize, int eventSize) {
+        [(1..eventSize).collect { (('A'..'Z') + ('a'..'z'))[RANDOM.nextInt(52)] }.join()] * chunkSize
+    }
+
 
     static {
         Sql.metaClass.eachRowLazy = { String query, int fetchSize, Closure consumer ->
