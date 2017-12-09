@@ -2,7 +2,6 @@ package gq.erokhin.zq.test.performance
 
 import com.codahale.metrics.MetricRegistry
 
-import javax.sql.DataSource
 import java.nio.file.Paths
 import java.time.Duration
 import java.util.concurrent.Callable
@@ -10,77 +9,35 @@ import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
-import static gq.erokhin.zq.test.Helpers.*
+import static gq.erokhin.zq.test.Helpers.TEST_QUEUE_NAME
+import static gq.erokhin.zq.test.Helpers.generateRandomData
 import static java.time.LocalDateTime.now
 
 /**
  * Created by Dmitry Erokhin (dmitry.erokhin@gmail.com)
  * 04.12.17
  */
-class ParallelTest {
+class ParallelTest extends AbstractPerformanceTest {
     static FILE_NAME = 'perftest_parallel_results.csv'
-    static CSV_HEADER = 'Chunk size,Event size (symbols),Enqueue rate (events/sec),Dequeue rate (events/sec)'
 
-    File resultsFile
     Duration testRuntime
     Duration dequeueDelay
     Duration warmUpTime
-    int[] chunkSizes
-    int[] eventSizes
-    int postgresPort
 
-    ParallelTest(options) {
-        def outDir = options.'output-dir' ?: './'
-        resultsFile = Paths.get(outDir, FILE_NAME).toFile()
-        resultsFile.delete()
-        resultsFile << CSV_HEADER << '\n'
-
-        chunkSizes = options.'chunk-sizes'.trim().split(',').collect({ it as int }).toList()
-        eventSizes = options.'event-sizes'.trim().split(',').collect({ it as int }).toList()
-
-        testRuntime = Duration.ofSeconds(options.'test-runtime' as long)
-        dequeueDelay = Duration.ofSeconds(options.'dequeue-delay' as long)
-        warmUpTime = Duration.ofSeconds((options.'warmup-time' ?: 0) as long)
-
-        postgresPort = (options.'pg-port' ?: 5432) as int
-    }
-
-    def run() {
-        DataSource dataSource = createDatasource('localhost', postgresPort)
-        createSchema(dataSource)
-
-        QueuingSolution zq = new ZQSolution(dataSource)
-        zq.createQueue(TEST_QUEUE_NAME)
-
-        println "Start parallel tests: chunk sizes = $chunkSizes; event sizes = $eventSizes; " +
-                "enqueue for ${testRuntime.seconds} seconds."
-        for (chunkSize in chunkSizes) {
-            for (eventSize in eventSizes) {
-                def results = test(zq, chunkSize, eventSize)
-                resultsFile << "$chunkSize,$eventSize,${results.enqueueRate},${results.dequeueRate}" << '\n'
-                println "Test for chunk of $chunkSize and event size of $eventSize finished. Results: " +
-                        "enqueue rate = ${results.enqueueRate} events/sec, " +
-                        "dequeue rate = ${results.dequeueRate} events/sec. "
-            }
-        }
-
-        println "All sequential tests finished, results stored in $resultsFile"
-    }
-
-
-    def test(QueuingSolution solution, int chunkSize, int eventSize) {
+    @Override
+    TestResults test(QueuingSolution solution, int chunkSize, int eventSize) {
         MetricRegistry metrics = new MetricRegistry()
-        def result = new Expando()
+        def result = new TestResults()
         def data = generateRandomData(chunkSize, eventSize)
         def testEndTime = now() + testRuntime
         def executor = Executors.newCachedThreadPool()
 
         def enqueueWorker = {
             def meter = null
-            def warmUpFinishTime = now() + warmUpTime
+            def startMeasureTime = now() + dequeueDelay + warmUpTime //start measuring after dequeuing will be started
             while (now() < testEndTime && !Thread.currentThread().isInterrupted()) {
                 solution.enqueue(TEST_QUEUE_NAME, data)
-                if (now() > warmUpFinishTime) {
+                if (now() > startMeasureTime) {
                     if (!meter) {
                         meter = metrics.meter("Enqueue")
                     }
@@ -92,16 +49,16 @@ class ParallelTest {
 
         def dequeueWorker = {
             def meter = null
-            def warmUpFinishTime = now() + warmUpTime
+            def startMeasureTime = now() + warmUpTime
             while (now() < testEndTime && !Thread.currentThread().isInterrupted()) {
                 def dequeuedCount = solution.dequeue(TEST_QUEUE_NAME, chunkSize)
 
                 if (dequeuedCount == 0) {
-                    println "Dequeue was interrupted due to absence of data. Reconsider test params."
+                    println "Dequeue was interrupted due to absence of data in the queue."
                     return 0
                 }
 
-                if (now() > warmUpFinishTime) {
+                if (now() > startMeasureTime) {
                     if (!meter) {
                         meter = metrics.meter("Dequeue")
                     }
@@ -129,10 +86,23 @@ class ParallelTest {
         cli.t(longOpt: 'test-runtime', args: 1, required: true, 'Duration of test in seconds')
         cli.t(longOpt: 'dequeue-delay', args: 1, required: true, 'Delay before start dequeuing in seconds')
         cli.w(longOpt: 'warmup-time', args: 1, required: false, 'Warm up duration in seconds (default – no warm up)')
+        cli.h(longOpt: 'pg-host', args: 1, required: false, 'PostgreSQL host (default – localhost)')
         cli.p(longOpt: 'pg-port', args: 1, required: false, 'PostgreSQL port (default – 5432)')
         cli.o(longOpt: 'output-dir', args: 1, required: false, 'Directory path where result files will be stored (default – current dir)')
 
-        new ParallelTest(cli.parse(args)).run()
+        def options = cli.parse(args)
+
+        new ParallelTest(
+                name: 'Parallel enq/deq',
+                resultsFile: Paths.get(options.'output-dir' ?: './', FILE_NAME).toFile(),
+                chunkSizes: options.'chunk-sizes'.trim().split(',').collect({ it as int }).toList(),
+                eventSizes: options.'event-sizes'.trim().split(',').collect({ it as int }).toList(),
+                testRuntime: Duration.ofSeconds(options.'test-runtime' as long),
+                dequeueDelay: Duration.ofSeconds(options.'dequeue-delay' as long),
+                warmUpTime: Duration.ofSeconds((options.'warmup-time' ?: 0) as long),
+                host: (options.'pg-host' ?: 'localhost'),
+                port: (options.'pg-port' ?: 5432) as int
+        ).run()
     }
 
 }

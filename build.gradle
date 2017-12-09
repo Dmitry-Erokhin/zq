@@ -122,6 +122,7 @@ task sequentialPerfTest(type: JavaExec) {
             "--pg-port=${project.ext.pgPort}",
             "--output-dir=${project.buildDir}"]
 }
+
 task parallelPerfTest(type: JavaExec) {
     group "perfTest"
     description "Runs parallel performance tests, stores results in build folder"
@@ -130,8 +131,8 @@ task parallelPerfTest(type: JavaExec) {
     main = 'gq.erokhin.zq.test.performance.ParallelTest'
     classpath = sourceSets.performanceTests.runtimeClasspath
 
-    args = ['--chunk-sizes=10,100,1000,10000',
-            '--event-sizes=16',
+    args = ['--chunk-sizes=100,1000',
+            '--event-sizes=16,512,1024,65535',
             '--test-runtime=60',
             '--dequeue-delay=20',
             '--warmup-time=10',

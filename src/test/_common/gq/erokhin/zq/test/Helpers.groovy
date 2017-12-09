@@ -73,7 +73,9 @@ class Helpers {
     }
 
     static List<String> generateRandomData(int chunkSize, int eventSize) {
-        [(1..eventSize).collect { (('A'..'Z') + ('a'..'z'))[RANDOM.nextInt(52)] }.join()] * chunkSize
+        (1..chunkSize).collect( {
+            (1..eventSize).collect { (('A'..'Z') + ('a'..'z'))[RANDOM.nextInt(52)] }.join()
+        } ).toList()
     }
 
 

@@ -2,78 +2,36 @@ package gq.erokhin.zq.test.performance
 
 import com.codahale.metrics.MetricRegistry
 
-import javax.sql.DataSource
 import java.nio.file.Paths
 import java.time.Duration
 
-import static gq.erokhin.zq.test.ApiWrappers.createQueue
-import static gq.erokhin.zq.test.Helpers.*
+import static gq.erokhin.zq.test.Helpers.TEST_QUEUE_NAME
+import static gq.erokhin.zq.test.Helpers.generateRandomData
 import static java.time.LocalDateTime.now
 
 /**
  * Created by Dmitry Erokhin (dmitry.erokhin@gmail.com)
  * 10.11.17
  */
-class SequentialTest {
+class SequentialTest extends AbstractPerformanceTest {
     static FILE_NAME = 'perftest_sequential_results.csv'
-    static CSV_HEADER = 'Chunk size,Event size (symbols),Enqueue rate (events/sec),Dequeue rate (events/sec)'
 
-    File resultsFile
+
     Duration enqueueRuntime
     Duration warmUpTime
-    int[] chunkSizes
-    int[] eventSizes
-    int postgresPort
 
-    SequentialTest(options) {
-        def outDir = options.'output-dir' ?: './'
-        resultsFile = Paths.get(outDir, FILE_NAME).toFile()
-        resultsFile.delete()
-        resultsFile << CSV_HEADER << '\n'
-
-        chunkSizes = options.'chunk-sizes'.trim().split(',').collect({ it as int }).toList()
-        eventSizes = options.'event-sizes'.trim().split(',').collect({ it as int }).toList()
-
-        enqueueRuntime = Duration.ofSeconds(options.'enqueue-runtime' as long)
-        warmUpTime = Duration.ofSeconds((options.'warmup-time' ?: 0) as long)
-
-        postgresPort = (options.'pg-port' ?: 5432) as int
-    }
-
-    def run() {
-        DataSource dataSource = createDatasource('localhost', postgresPort)
-        createSchema(dataSource)
-
-        QueuingSolution zq = new ZQSolution(dataSource)
-        zq.createQueue(TEST_QUEUE_NAME)
-
-        println "Start sequential tests: chunk sizes = $chunkSizes; event sizes = $eventSizes; " +
-                "enqueue for ${enqueueRuntime.seconds} seconds."
-        for (chunkSize in chunkSizes) {
-            for (eventSize in eventSizes) {
-                def results = test(zq, chunkSize, eventSize)
-                resultsFile << "$chunkSize,$eventSize,${results.enqueueRate},${results.dequeueRate}" << '\n'
-                println "Test for chunk of $chunkSize and event size of $eventSize finished. Results: " +
-                        "enqueue rate = ${results.enqueueRate} events/sec, " +
-                        "dequeue rate = ${results.dequeueRate} events/sec. "
-            }
-        }
-
-        println "All sequential tests finished, results stored in $resultsFile"
-    }
-
-
-    def test(QueuingSolution solution, int chunkSize, int eventSize) {
+    @Override
+    TestResults test(QueuingSolution solution, int chunkSize, int eventSize) {
         MetricRegistry metrics = new MetricRegistry()
-        def result = new Expando()
+        def result = new TestResults()
         def data = generateRandomData(chunkSize, eventSize)
-        def warmUpFinishTime = now() + warmUpTime
+        def startMeasureTime = now() + warmUpTime
         def enqueueFinishTime = now() + enqueueRuntime
         def meter = null
 
         while (now() < enqueueFinishTime && !Thread.currentThread().isInterrupted()) {
             solution.enqueue(TEST_QUEUE_NAME, data)
-            if (now() > warmUpFinishTime) {
+            if (now() > startMeasureTime) {
                 if (!meter) {
                     meter = metrics.meter("Enqueue")
                 }
@@ -83,7 +41,7 @@ class SequentialTest {
 
         result.enqueueRate = meter.meanRate.round(3)
 
-        warmUpFinishTime = now() + warmUpTime
+        startMeasureTime = now() + warmUpTime
         meter = null
 
         while (!Thread.currentThread().isInterrupted()) {
@@ -93,7 +51,7 @@ class SequentialTest {
                 break
             }
 
-            if (now() > warmUpFinishTime) {
+            if (now() > startMeasureTime) {
                 if (!meter) {
                     meter = metrics.meter("Dequeue")
                 }
@@ -109,14 +67,29 @@ class SequentialTest {
     static void main(String[] args) {
         def cli = new CliBuilder(usage: "${SequentialTest.class.simpleName}.groovy <options> [output dir]")
 
+
         cli.c(longOpt: 'chunk-sizes', args: 1, required: true, 'Coma separated amount of events in chunk')
         cli.e(longOpt: 'event-sizes', args: 1, required: true, 'Coma separated sizes of the event')
         cli.t(longOpt: 'enqueue-runtime', args: 1, required: true, 'Duration of enqueuing part in seconds')
+        cli.t(longOpt: 'dequeue-delay', args: 1, required: true, 'Delay before start dequeuing in seconds')
         cli.w(longOpt: 'warmup-time', args: 1, required: false, 'Warm up duration in seconds (default – no warm up)')
+        cli.h(longOpt: 'pg-host', args: 1, required: false, 'PostgreSQL host (default – localhost)')
         cli.p(longOpt: 'pg-port', args: 1, required: false, 'PostgreSQL port (default – 5432)')
         cli.o(longOpt: 'output-dir', args: 1, required: false, 'Directory path where result files will be stored (default – current dir)')
 
-        new SequentialTest(cli.parse(args)).run()
+        def options = cli.parse(args)
+
+        new ParallelTest(
+                name: 'Parallel enq/deq',
+                resultsFile: Paths.get(options.'output-dir' ?: './', FILE_NAME).toFile(),
+                chunkSizes: options.'chunk-sizes'.trim().split(',').collect({ it as int }).toList(),
+                eventSizes: options.'event-sizes'.trim().split(',').collect({ it as int }).toList(),
+                testRuntime: Duration.ofSeconds(options.'test-runtime' as long),
+                dequeueDelay: Duration.ofSeconds(options.'dequeue-delay' as long),
+                warmUpTime: Duration.ofSeconds((options.'warmup-time' ?: 0) as long),
+                host: (options.'pg-host' ?: 'localhost'),
+                port: (options.'pg-port' ?: 5432) as int
+        ).run()
     }
 
 }
